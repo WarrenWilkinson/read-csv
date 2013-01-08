@@ -1,31 +1,6 @@
 read-csv
 ========
 
-Table of Contents
-=================
-1 Overview
-    1.1 Features
-2 Installation
-    2.1 Quick Lisp
-    2.2 Gentoo
-    2.3 Ubunto
-    2.4 Manual Installation
-    2.5 Running the Tests
-    2.6 Getting Support
-3 Implementation
-    3.1 Collecting the Input
-    3.2 Traversing the Input
-    3.3 Parsing whole files: parse-csv
-    3.4 Test Framework
-        3.4.1 Parse-csv tests
-        3.4.2 Running Tests
-4 Tests Expressions
-    4.1 Blanks
-    4.2 Quotes and Tricky Characters
-    4.3 International Text
-5 License
-
-
 1 Overview 
 ===========
 
