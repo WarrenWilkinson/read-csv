@@ -190,6 +190,13 @@ multiline\", data")
 (deftest test-multiline-dos   (multiline-dos-example)   *multiline-answer*)
 (deftest test-multiline-mixed (multiline-mixed-example) *multiline-answer*)
 
+(defun misc-tests ()
+  (handler-case (eval '(let ((quote 'cl:quote))
+                        (declare (ignore quote))
+                        :ok))
+    (error () :fail)))
+
+(deftest test-misc-tests (misc-tests) :ok)
 
 (defstruct results
   (tests 0)
@@ -238,7 +245,8 @@ multiline\", data")
                  #'test-quoted-big
                  #'test-multiline-unix
                  #'test-multiline-dos
-                 #'test-multiline-mixed)
+                 #'test-multiline-mixed
+                 #'test-misc-tests)
            :initial-value starting-results))
   
 (defun run-tests ()
