@@ -23,6 +23,7 @@
 
 (defpackage :read-csv
   (:use :common-lisp)
+  (:shadow :quote)
   (:export read-csv parse-csv))
 
 (in-package :read-csv)
