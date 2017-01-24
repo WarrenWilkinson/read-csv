@@ -1,4 +1,5 @@
 (defpackage :read-csv
+  (:documentation "A simple CSV file reader.")
   (:use :common-lisp)
   (:export
    #:read-csv
@@ -35,20 +36,26 @@
   (if (boundp '+csv-table+) +csv-table+
       (make-array '(7 6 2) 
        :initial-contents
-    ;;WHITE,         RETURN,          LF,              QUOTE,           SEP,             OTHER
-`(((noop ,start) (ship ,retur) (ship ,done!) (noop ,myquo) (next ,start) (addc ,unquo))
-  ((noop ,start) (ship ,retur) (noop ,done!) (noop ,start) (next ,start) (addc ,unquo))
-  ((addc ,unquo) (ship ,retur) (ship ,done!) (addc ,unquo) (next ,start) (addc ,unquo))
-  ((addc ,myquo) (noop ,q+ret) (addl ,myquo) (noop ,q+quo) (addc ,myquo) (addc ,myquo))
-  ((addc ,myquo) (noop ,q+ret) (addl ,myquo) (noop ,q+quo) (addc ,myquo) (addc ,myquo))
-  ((noop ,q+q&w) (ship ,retur) (ship ,done!) (addc ,myquo) (next ,start) (addc ,unquo))
-  ((noop ,q+q&w) (ship ,retur) (ship ,done!) (addc ,myquo) (next ,start) (addc ,unquo))))))
+       ;;WHITE,         RETURN,       LF,           QUOTE,        SEP,          OTHER           ;; STATE 
+       `(((noop ,start) (ship ,retur) (ship ,done!) (noop ,myquo) (next ,start) (addc ,unquo))  ;; start
+	 ((noop ,start) (ship ,retur) (noop ,done!) (noop ,start) (next ,start) (addc ,unquo))  ;; return seen
+	 ((addc ,unquo) (ship ,retur) (ship ,done!) (addc ,unquo) (next ,start) (addc ,unquo))  ;; unquoted text
+	 ((addc ,myquo) (noop ,q+ret) (addl ,myquo) (noop ,q+quo) (addc ,myquo) (addc ,myquo))  ;; in-quote
+	 ((addc ,myquo) (noop ,q+ret) (addl ,myquo) (noop ,q+quo) (addc ,myquo) (addc ,myquo))  ;; in-quote, seen return
+	 ((noop ,q+q&w) (ship ,retur) (ship ,done!) (addc ,myquo) (next ,start) (addc ,unquo))  ;; in-quote, seen quote
+	 ((noop ,q+q&w) (ship ,retur) (ship ,done!) (addc ,myquo) (next ,start) (addc ,unquo)))))) ;; in quote, seen quote, now whitespace
 
 (defun char-class (sep char)
   (case char (#\Space 0) (#\Return 1) (#\Linefeed 2) (#\" 3) (otherwise (if (char= sep char) 4 5))))
 
 (defun read-csv (stream &optional (sep #\,) (eof-error-p t) eof-value)
-  "Return CSV data and a second value that's true if row ended by EOF."
+  "Read a single line of CSV data from stream. Return the parsed CSV
+   data and a boolean that is true when you've just read the last
+   record in the stream.
+
+   eof-error-p controls how this function behaves if the first
+   character read is end-of-file.  If true, an error is thrown, if
+   false, the eof-value is returned."
   (let ((*records* nil)
         (*record* nil)
         (*white-char-count* 0))
@@ -66,6 +73,7 @@
     (values *records* (eq :eof (peek-char nil stream nil :eof)))))
  
 (defun parse-csv (stream  &optional (sep #\,))
+  "Read CSV data from a stream until end-of-file is encountered."
   (loop for (line end-p) = (multiple-value-list (read-csv stream sep nil :eof))
         unless (eq line :eof) collect line
         until end-p))
