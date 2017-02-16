@@ -1,6 +1,6 @@
 (defsystem :read-csv
   :name "read-csv"
-  :version "1.0.1"
+  :version "1.0.2"
   :author "Warren Wilkinson <warrenwilkinson@gmail.com>"
   :license "cc0 (public domain)"
   :description "A library for reading CSV data from streams."
@@ -9,7 +9,7 @@
 
 (defsystem :read-csv.test
   :name "read-csv.test"
-  :version "1.0.1"
+  :version "1.0.2"
   :author "Warren Wilkinson <warrenwilkinson@gmail.com>"
   :description "Testing code for the read-csv library"
   :licence "cc0 (public domain)"
