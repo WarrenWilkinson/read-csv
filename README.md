@@ -9,8 +9,9 @@ read-csv is a stream oriented CSV (comma-separated value) reader.
 
 ```lisp
 (ql:quickload 'read-csv)
+(use-package :read-csv)
 (with-open-file (s "/path/to/csv")
-  (read-csv:parse-csv s))
+  (parse-csv s))
 ;; Returns a list of lists of strings.
 ```
 
