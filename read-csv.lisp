@@ -69,7 +69,7 @@
                (when (= class myquo) (setf *white-char-count* 0))
                (funcall (aref +csv-table+ state class 0) char)
                (setf state (aref +csv-table+ state class 1)))
-       until (eq state done!))
+       until (eql state done!))
     (values *records* (eq :eof (peek-char nil stream nil :eof)))))
  
 (defun parse-csv (stream  &optional (sep #\,))
