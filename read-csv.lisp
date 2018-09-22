@@ -33,7 +33,7 @@
 (defconstant q+q&w 6)  ;; Quoted and have seen quote, in following whitespace
 
 (defconstant +csv-table+
-  (if (boundp '+csv-table+) +csv-table+
+  (if (boundp '+csv-table+) (symbol-value '+csv-table+)
       (make-array '(7 6 2) 
        :initial-contents
        ;;WHITE,         RETURN,       LF,           QUOTE,        SEP,          OTHER           ;; STATE 
