@@ -4,7 +4,7 @@
 
 (in-package :read-csv.test)
 
-(defvar *all-statements*
+(defparameter *all-statements*
   (list ;; Blank Tests
         (cons (concatenate 'string "") (concatenate 'string ""))
         (cons (concatenate 'string " " (list #\Tab) " ") (concatenate 'string ""))
@@ -78,7 +78,7 @@
            (progn (format t "~%Expected~% ~s~%but got~%~s" expect got)
                   nil)))))
 
-(defvar *a-tough-example-answer* '(("very tough" "easier to do")))
+(defparameter *a-tough-example-answer* '(("very tough" "easier to do")))
 (defun a-tough-example () 
   (with-input-from-string (s "  \"very tough\"   ,    easier to do     
 ")
@@ -86,7 +86,7 @@
 
 (deftest test-tough (a-tough-example) *a-tough-example-answer*)
 
-(defvar *big-example-answer*
+(defparameter *big-example-answer*
   '(("first name" "last name"   "job \"title\""                      "number of hours" "id")
     ("Russ"       "Tyndall"     "Software Developer's, \"Position\"" "26.2"            "1")
     ("Adam"       "Smith"       "Economist"                          "37.5"            "2")
@@ -126,45 +126,114 @@ Mr,Iñtërnâtiônàlizætiøn,,1.1,0")
 (deftest test-big        (big-example)        *big-example-answer*)
 (deftest test-quoted-big (quoted-big-example) *big-example-answer*)
 
-(defvar *multiline-answer*
-  '(("this" "is" "a" "test
-of
-multiline" "data")
-    ("row2" "of" "the" "test
-of
-multiline" "data")))
+(defparameter *multiline-answer-data*
+  ;; List of csv lines. Each csv line is a list elements, each of
+  ;; which is either a string or a list of strings. A string is
+  ;; interpreted as itself. For a list of strings, it is interpreted
+  ;; as a string with line endings between each element. The specific
+  ;; line ending is determined at run time: either a CR (Mac), LF
+  ;; (Unix), or a CR-LF sequence (DOS).
+  '(("this" "is" "a" ("test" "of" "multiline") "data")
+    ("row2" "of" "the" ("test" "of" "multiline") "data")))
 
-(defun multiline-unix-example () 
-  (with-input-from-string (s "this,is,a,\"test
-of
-multiline\", data
-row2,of,the,\"test
-of
-multiline\", data")
-    (parse-csv s)))
+(defun eol-to-line-ending (eol)
+  (ecase eol
+    (:lf '#.(format nil "~c" #\Newline))
+    (:cr '#.(format nil "~c" #\Return))
+    (:crlf '#.(format nil "~c~c" #\Return #\Newline))))
+
+
+(defparameter *default-eol* ':lf)
+
+(defun multiline-datum-to-answer (datum)
+  (loop with line-ending = (eol-to-line-ending *default-eol*)
+        for x in datum
+        if (atom x)
+          collect x
+        else collect
+             (with-output-to-string (out)
+               (loop for (y . more?) on x
+                     do (write-string y out)
+                     when more?
+                       do (write-string line-ending out)))))
+
+(defun multiline-data-to-answer-data (data)  
+  (loop for datum in data
+        collect (multiline-datum-to-answer datum)))
+
+(defun multiline-datum-to-example-datum (datum &optional eol)
+  (with-output-to-string (out)
+    (loop with line-ending = (eol-to-line-ending (or eol *default-eol*))
+          for (x . more?) on datum
+          if (atom x)
+            do (write-string x out)
+          else do (write-char #\" out)
+                  (loop for (y . more?) on x
+                        do (write-string y out)
+                        when more?
+                          do (write-string line-ending out))
+                  (write-char #\" out)
+          when more?
+            do (write-string "," out))))
+
+(defun multiline-data-to-example-data (data &optional eol)
+  (when (null eol)
+    (setq eol *default-eol*))
+  (let ((flip t))                       ; for eol = :mixed
+    (flet ((linebreak-out (out)
+             (ecase eol
+               (:mixed 
+                (write-string (eol-to-line-ending (if flip :lf :crlf)) out)
+                (setq flip (not flip)))
+               ((:cr :lf :crlf)
+                (write-string (eol-to-line-ending eol) out)))))
+      (with-output-to-string (out)
+        (loop for datum in data
+              do (loop for (x . more?) on datum
+                       if (atom x)
+                         do (write-string x out)
+                       else do (write-char #\" out)
+                               (loop for (y . more?) on x
+                                     do (write-string y out)
+                                     when more?
+                                       do (linebreak-out out))
+                               (write-char #\" out)
+                       when more?
+                         do (write-string "," out))
+                 (linebreak-out out))))))
+        
+
+(defparameter *multiline-answer*
+  (multiline-data-to-answer-data *multiline-answer-data*))
+        
+
+(defun multiline-example (example-type)
+  (let ((eol
+          (ecase example-type
+            (:unix :lf)
+            (:dos :crlf)
+            (:mac :cr)
+            (:mixed :mixed))))
+    (with-input-from-string
+        (s (multiline-data-to-example-data *multiline-answer-data* eol))
+      (parse-csv s))))
+    
+
+(defun multiline-unix-example ()
+  (multiline-example ':unix))
 
 (defun multiline-dos-example ()
-  (with-input-from-string 
-      (s (concatenate 'string "this,is,a,\"test" (list #\Return #\Linefeed)
-                      "of" (list #\Return #\Linefeed)
-                      "multiline\", data" (list #\Return #\Linefeed)
-                      "row2,of,the,\"test" (list #\Return #\Linefeed)
-                      "of" (list #\Return #\Linefeed)
-                      "multiline\", data" (list #\Return #\Linefeed)))
-    (parse-csv s)))
+  (multiline-example ':dos))
+
+(defun multiline-mac-example ()
+  (multiline-example ':mac))
 
 (defun multiline-mixed-example ()
-  (with-input-from-string
-      (s (concatenate 'string "this,is,a,\"test" (list #\Linefeed)
-                      "of" (list #\Return #\Linefeed)
-                      "multiline\", data" (list #\Return #\Linefeed)
-                      "row2,of,the,\"test" (list #\Linefeed)
-                      "of" (list #\Return #\Linefeed)
-                      "multiline\", data" (list #\Linefeed)))
-    (parse-csv s)))
+  (multiline-example ':mixed))
 
 (deftest test-multiline-unix  (multiline-unix-example)  *multiline-answer*)
 (deftest test-multiline-dos   (multiline-dos-example)   *multiline-answer*)
+(deftest test-multiline-mac   (multiline-mac-example)   *multiline-answer*)
 (deftest test-multiline-mixed (multiline-mixed-example) *multiline-answer*)
 
 (defun misc-tests ()
@@ -222,6 +291,7 @@ multiline\", data")
                  #'test-quoted-big
                  #'test-multiline-unix
                  #'test-multiline-dos
+                 #'test-multiline-mac
                  #'test-multiline-mixed
                  #'test-misc-tests)
            :initial-value starting-results))

@@ -48,6 +48,16 @@
 (defun char-class (sep char)
   (case char (#\Space 0) (#\Return 1) (#\Linefeed 2) (#\" 3) (otherwise (if (char= sep char) 4 5))))
 
+(defun read-csv-char (stream eof-error-p)
+  (let ((char-or-eof (read-char stream eof-error-p :eof)))
+    (case char-or-eof
+      (#\return
+       ;; CR: if followed by LF, read past it. Either way, return LF.
+       (when (eql (peek-char nil stream eof-error-p :eof) #\linefeed)
+         (read-char stream))
+       #\linefeed)
+      (otherwise char-or-eof))))       
+
 (defun read-csv (stream &optional (sep #\,) (eof-error-p t) eof-value)
   "Read a single line of CSV data from stream. Return the parsed CSV
    data and a boolean that is true when you've just read the last
@@ -61,7 +71,7 @@
         (*white-char-count* 0))
     (declare (special *record* *records* *white-char-count*))
     (loop with state = start
-          for char = (read-char stream (and (null *records*) eof-error-p) :eof)
+          for char = (read-csv-char stream (and (null *records*) eof-error-p))
           when (eq char :eof) 
           do (return-from read-csv (values (if *records* (ship :eof) eof-value) t))
           do (incf *white-char-count*)

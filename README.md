@@ -5,7 +5,7 @@ read-csv is a stream oriented CSV (comma-separated value) reader.
 
    * Small (~50 lines of code)
    * Supports quotes, including newlines and separator characters within the quotes.
-   * Supports Unix style LF line endings and Dos CRLF line endings. (automatically)
+   * Supports Unix style LF, Dos style CRLF, and (Classic) Mac style CR line endings. (automatically)
 
 ```lisp
 (ql:quickload 'read-csv)
@@ -24,9 +24,9 @@ Once the system is loaded, it can be tested with asdf.
 (asdf:operate 'asdf:test-op :read-csv)
 RUNNING READ-CSV TESTS...
 READ-CSV TEST RESULTS:
-   Tests: 519
- Success: 519
-Failures: 0
+     Tests: 521
+   Success: 521
+  Failures: 0
 ```
 
 License 
